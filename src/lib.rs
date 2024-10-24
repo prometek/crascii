@@ -47,8 +47,8 @@ pub struct ASCIIImage<'a> {
 }
 
 pub struct Options<'a> {
-    pub width: Option<u32>,
-    pub height: Option<u32>,
+    pub columns: Option<u32>,
+    pub lines: Option<u32>,
     pub color: bool,
     pub charsets: &'a str,
 }
@@ -98,7 +98,7 @@ impl <'a>ASCIIImage<'a> {
         println!("Image aspect ratio: {}, Effective aspect ratio: {}", img_aspect_ratio, effective_aspect_ratio);
 
         // Decide on the number of characters per line and per column
-        match (self.options.width, self.options.height) {
+        match (self.options.columns, self.options.lines) {
             (Some(width_chars), Some(height_chars)) => {
                 self.nb_chars_per_line = width_chars;
                 self.nb_chars_per_column = height_chars;

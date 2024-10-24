@@ -13,12 +13,12 @@ struct Args {
     output: String,
 
     /// The width of the output image
-    #[arg(short, long)]
-    width: Option<u32>,
+    #[arg(short = 'w', long)]
+    columns: Option<u32>,
 
     /// The height of the output image
     #[arg(short= 'H', long)]
-    height: Option<u32>,
+    lines: Option<u32>,
 
     /// The color of the output image
     #[arg(short = 'C', long, default_value = "false")]
@@ -33,8 +33,8 @@ fn main() -> Result<(), image::ImageError> {
     let args = Args::parse();
 
     let mut ascii_image = ASCIIImage::new(args.image, Options {
-        width: args.width,
-        height: args.height,
+        columns: args.columns,
+        lines: args.lines,
         color: args.color.as_str() == "true",
         charsets: args.charsets.as_str(),
     });
