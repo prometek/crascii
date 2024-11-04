@@ -1,14 +1,16 @@
-use image::{ImageReader, DynamicImage, GrayImage, GenericImageView, GenericImage, Rgba, ColorType, RgbImage, Rgb};
+use image::{ImageReader, DynamicImage, GrayImage, GenericImageView, GenericImage, Rgba, ColorType, RgbImage, Rgb, RgbaImage};
 use imageproc::drawing::draw_text_mut;
 use ansi_term::Color;
 use ab_glyph::{FontRef, PxScale, Font, ScaleFont};
+
+use std::borrow::Cow;
 
 
 mod charsets;
 
 pub struct ColoredChar {
     ch: char,
-    color: Rgb<u8>,
+    color: Rgba<u8>,
 }
 
 pub struct Pixel {
@@ -50,7 +52,8 @@ pub struct Options<'a> {
     pub columns: Option<u32>,
     pub lines: Option<u32>,
     pub color: bool,
-    pub charsets: &'a str,
+    pub charsets: Cow<'a, str>,
+    pub output_path: Cow<'a, str>,
 }
 
 impl <'a>ASCIIImage<'a> {
@@ -86,7 +89,6 @@ impl <'a>ASCIIImage<'a> {
     
     pub fn resize(&mut self, image: DynamicImage) -> DynamicImage {
         let (img_width, img_height) = image.dimensions();
-        println!("Image dimensions: width: {}, height: {}", img_width, img_height);
 
         let (char_aspect_ratio, char_height, char_width) = self.get_char_aspect_ratio('W');
 
@@ -95,7 +97,6 @@ impl <'a>ASCIIImage<'a> {
 
         // Effective aspect ratio
         let effective_aspect_ratio = img_aspect_ratio * char_aspect_ratio;
-        println!("Image aspect ratio: {}, Effective aspect ratio: {}", img_aspect_ratio, effective_aspect_ratio);
 
         // Decide on the number of characters per line and per column
         match (self.options.columns, self.options.lines) {
@@ -148,6 +149,13 @@ impl <'a>ASCIIImage<'a> {
         (char_width as f32 / char_height as f32, char_height as f32, char_width as f32)
     }
 
+    pub fn convert(&mut self) -> Result<(), image::ImageError> {
+        let image = self.reader();
+        let greyscale = self.convert_to_greyscale(&image);
+        let ascii_art = self.convert_to_ascii(greyscale);
+        self.save_image(ascii_art, &self.options.output_path)
+    }
+
 }
 
 impl ASCII for ASCIIImage<'_> {
@@ -188,7 +196,7 @@ impl ASCII for ASCIIImage<'_> {
             for x in 0..image.width() {
                 let pixel = self.pixels.get_pixel(x, y);
                 let ch = self.find_char(chars, pixel.grey).chars().next().unwrap();
-                let color = Rgb([pixel.r, pixel.g, pixel.b]);
+                let color = Rgba([pixel.r, pixel.g, pixel.b, pixel.a]);
 
                 line.push(ColoredChar { ch, color });
 
@@ -232,11 +240,11 @@ impl ASCII for ASCIIImage<'_> {
         let width = max_line_width.ceil() as u32;
         let height = (num_lines as u32) * line_height;
 
-        let mut img = RgbImage::new(width, height);
+        let mut img = RgbaImage::new(width, height);
 
         // Fill the background with white
         for pixel in img.pixels_mut() {
-            *pixel = Rgb([255, 255, 255]);
+            *pixel = Rgba([255 as u8, 255 as u8, 255 as u8, 0 as u8]);
         }
 
         // Draw each character with its color
@@ -254,3 +262,7 @@ impl ASCII for ASCIIImage<'_> {
         Ok(())
     }
 }
+
+#[cfg(feature = "python")]
+mod python_bindings;
+
