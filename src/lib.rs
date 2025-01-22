@@ -265,7 +265,7 @@ impl ASCII for ASCIIImage<'_> {
 
 
     fn convert_to_ascii(&self, image: GrayImage) -> Vec<Vec<ColoredChar>> {
-        let chars = charsets::DEFAULT;
+        let chars = charsets::from_str(&self.options.charsets).unwrap();
         let mut ascii_art = Vec::new();
 
         for y in 0..image.height() {
@@ -335,7 +335,7 @@ impl ASCII for ASCIIImage<'_> {
             }
         }
 
-        img.save(output_path);
+        let _ = img.save(output_path);
     }
 }
 

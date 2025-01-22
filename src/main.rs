@@ -28,6 +28,9 @@ struct Args {
     /// Output file
     #[arg(short, long)]
     output_path: String,
+
+    #[arg(short, long)]
+    print: String,
 }
 
 fn main() -> Result<(), image::ImageError> {
