@@ -54,12 +54,7 @@ crascii [OPTIONS] --image <IMAGE> --output-path <OUTPUT_PATH>
    crascii -i my_image.png -o output.txt
    ```
 
-2. Convert an image to colored ASCII and print it to the terminal:
-   ```bash
-   crascii -i my_image.png -C -p
-   ```
-
-3. Specify custom dimensions for the output:
+2. Specify custom dimensions for the output:
    ```bash
    crascii -i my_image.png -w 100 -H 50 -o output.txt
    ```
