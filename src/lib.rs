@@ -56,6 +56,7 @@ pub struct Options<'a> {
     pub columns: Option<u32>,
     pub lines: Option<u32>,
     pub color: bool,
+    pub print: bool,
     pub charsets: Cow<'a, str>,
     pub output_path: Cow<'a, str>,
 }
@@ -280,13 +281,19 @@ impl ASCII for ASCIIImage<'_> {
                 // Terminal output with color
                 if self.options.color {
                     let ansi_color = Color::RGB(pixel.r, pixel.g, pixel.b);
-                    print!("{}", ansi_color.paint(ch.to_string()));
+                    if self.options.print {
+                        print!("{}", ansi_color.paint(ch.to_string()));
+                    }
                 } else {
-                    print!("{}", ch);
+                    if self.options.print {
+                        print!("{}", ch);
+                    }
                 }
             }
             ascii_art.push(line);
-            println!();
+            if self.options.print {
+                println!();
+            }
         }
         ascii_art
     }
