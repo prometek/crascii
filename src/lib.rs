@@ -2,12 +2,16 @@ use image::{ImageReader, DynamicImage, GrayImage, GenericImageView, GenericImage
 use imageproc::drawing::draw_text_mut;
 use ansi_term::Color;
 use ab_glyph::{FontRef, PxScale, Font, ScaleFont};
+use rand::Rng;
+use std::thread::sleep;
+use std::time::Duration;
 
 use std::borrow::Cow;
 
 
 mod charsets;
 
+#[derive(Clone)]
 pub struct ColoredChar {
     ch: char,
     color: Rgba<u8>,
@@ -156,6 +160,79 @@ impl <'a>ASCIIImage<'a> {
         self.save_image(ascii_art, &self.options.output_path)
     }
 
+    // Function to generate animation frames
+    pub fn convert_with_animation(&mut self, total_frames: u32) -> Result<(), image::ImageError> {
+        let image = self.reader();  // Load and resize image
+        let greyscale = self.convert_to_greyscale(&image);  // Convert to greyscale
+        let chars = charsets::DEFAULT;  // Load character set for conversion
+
+        // Store final positions and corresponding characters
+        let mut target_positions = vec![];
+        for y in 0..greyscale.height() {
+            for x in 0..greyscale.width() {
+                let pixel = self.pixels.get_pixel(x, y);
+                let ch = self.find_char(chars, pixel.grey).chars().next().unwrap();
+                target_positions.push(((x, y), ch, Rgba([pixel.r, pixel.g, pixel.b, pixel.a])));
+            }
+        }
+
+        // Create initial random positions for each character
+        let mut rng = rand::thread_rng();
+        let mut current_positions: Vec<((f32, f32), char, Rgba<u8>)> = target_positions
+            .iter()
+            .map(|(_, ch, color)| {
+                (
+                    (
+                        rng.gen_range(0.0..self.nb_chars_per_line as f32),
+                        rng.gen_range(0.0..self.nb_chars_per_column as f32),
+                    ),
+                    *ch,
+                    *color,
+                )
+            })
+            .collect();
+
+        // Generate each frame of the animation
+        for frame_num in 0..total_frames {
+            let factor = 1.0 / (total_frames as f32);  // Movement factor per frame
+            let mut ascii_art = vec![vec![ColoredChar { ch: ' ', color: Rgba([255, 255, 255, 0]) }; self.nb_chars_per_line as usize]; self.nb_chars_per_column as usize];
+
+            // Move each character closer to its target
+            for i in 0..current_positions.len() {
+                let current = current_positions[i].0;
+                let target = target_positions[i].0;
+                let new_position = self.move_point(current, (target.0 as f32, target.1 as f32), factor);
+                current_positions[i].0 = new_position;
+
+                // Place character in the ASCII art grid if within bounds
+                let x = new_position.0.round() as usize;
+                let y = new_position.1.round() as usize;
+                if x < self.nb_chars_per_line as usize && y < self.nb_chars_per_column as usize {
+                    ascii_art[y][x] = ColoredChar {
+                        ch: current_positions[i].1,
+                        color: current_positions[i].2,
+                    };
+                }
+            }
+
+            // Save each frame
+            let frame_path = format!("output_frame_{:03}.png", frame_num);
+            self.save_image(ascii_art, &frame_path)?;
+
+            // Optional sleep to visualize movement in real-time
+            sleep(Duration::from_millis(50));
+        }
+
+        Ok(())
+    }
+
+    // Helper function to move a point closer to its target
+    fn move_point(&self, current: (f32, f32), target: (f32, f32), factor: f32) -> (f32, f32) {
+        let new_x = current.0 + (target.0 - current.0) * factor;
+        let new_y = current.1 + (target.1 - current.1) * factor;
+        (new_x, new_y)
+    }
+
 }
 
 impl ASCII for ASCIIImage<'_> {
@@ -182,12 +259,12 @@ impl ASCII for ASCIIImage<'_> {
                 greyscale_image.put_pixel(x, y, image::Luma([greyscale]));
             }
         }
-        greyscale_image.save("greyscale.png");
+        //greyscale_image.save("greyscale.png");
         greyscale_image
     }
 
 
-        fn convert_to_ascii(&self, image: GrayImage) -> Vec<Vec<ColoredChar>> {
+    fn convert_to_ascii(&self, image: GrayImage) -> Vec<Vec<ColoredChar>> {
         let chars = charsets::DEFAULT;
         let mut ascii_art = Vec::new();
 

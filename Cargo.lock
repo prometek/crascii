@@ -304,6 +304,7 @@ dependencies = [
  "image",
  "imageproc",
  "pyo3",
+ "rand",
  "rusttype",
 ]
 

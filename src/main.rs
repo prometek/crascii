@@ -45,6 +45,8 @@ fn main() -> Result<(), image::ImageError> {
     //let greyscale = ASCII::convert_to_greyscale(&mut ascii_image, &image);
     //let ascii = ASCII::convert_to_ascii(&ascii_image, greyscale);
     //ASCII::save_image(&ascii_image ,ascii, &"./output.png")?;
-    ascii_image.convert()?;
+    //ascii_image.convert()?;
+    //ascii_image.convert_with_animation(100)?;
+    ascii_image.convert_with_animation(5)?;
     Ok(())
 }
