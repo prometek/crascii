@@ -1,6 +1,6 @@
 use clap::Parser;
 use std::borrow::Cow; 
-use crascii::{ASCIIImage, Options, ASCII};
+use crascii::{ASCIIImage, Options};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -40,13 +40,13 @@ fn main() -> Result<(), image::ImageError> {
         charsets: Cow::Owned(args.charsets),
         output_path: Cow::Owned(args.output_path),
     });
-
+    ascii_image.convert();
     //let image = ASCII::reader(&mut ascii_image);
     //let greyscale = ASCII::convert_to_greyscale(&mut ascii_image, &image);
     //let ascii = ASCII::convert_to_ascii(&ascii_image, greyscale);
     //ASCII::save_image(&ascii_image ,ascii, &"./output.png")?;
     //ascii_image.convert()?;
     //ascii_image.convert_with_animation(100)?;
-    ascii_image.convert_with_animation(5)?;
+    //ascii_image.convert_with_animation(5)?;
     Ok(())
 }

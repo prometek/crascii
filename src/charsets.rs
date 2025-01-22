@@ -34,6 +34,6 @@ pub fn from_str(s: &str) -> Option<&[&str]> {
         "emoji" => Some(EMOJI),
         "russian" => Some(RUSSIAN),
         "slight" => Some(SLIGHT),
-        _ => None,
+        _ => Some(DEFAULT),
     }
 }

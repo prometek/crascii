@@ -1,4 +1,4 @@
-use image::{ImageReader, DynamicImage, GrayImage, GenericImageView, GenericImage, Rgba, ColorType, RgbImage, Rgb, RgbaImage};
+use image::{ImageReader, DynamicImage, GrayImage, GenericImageView , Rgba,  RgbaImage};
 use imageproc::drawing::draw_text_mut;
 use ansi_term::Color;
 use ab_glyph::{FontRef, PxScale, Font, ScaleFont};
@@ -8,8 +8,8 @@ use std::time::Duration;
 
 use std::borrow::Cow;
 
-
 mod charsets;
+
 
 #[derive(Clone)]
 pub struct ColoredChar {
@@ -40,7 +40,7 @@ pub trait ASCII {
     fn reader(&mut self) -> DynamicImage;
     fn convert_to_greyscale(&mut self, image: &DynamicImage) -> GrayImage;
     fn convert_to_ascii(&self, image: GrayImage) -> Vec<Vec<ColoredChar>>;
-    fn save_image(&self, ascii: Vec<Vec<ColoredChar>>, output_path: &str) -> Result<(), image::ImageError>;
+    fn save_image(&self, ascii: Vec<Vec<ColoredChar>>, output_path: &str);
 }
 
 
@@ -94,7 +94,7 @@ impl <'a>ASCIIImage<'a> {
     pub fn resize(&mut self, image: DynamicImage) -> DynamicImage {
         let (img_width, img_height) = image.dimensions();
 
-        let (char_aspect_ratio, char_height, char_width) = self.get_char_aspect_ratio('W');
+        let (char_aspect_ratio, _char_height, _char_width) = self.get_char_aspect_ratio('W');
 
         // Image aspect ratio
         let img_aspect_ratio = img_width as f32 / img_height as f32;
@@ -153,11 +153,11 @@ impl <'a>ASCIIImage<'a> {
         (char_width as f32 / char_height as f32, char_height as f32, char_width as f32)
     }
 
-    pub fn convert(&mut self) -> Result<(), image::ImageError> {
+    pub fn convert(&mut self) {
         let image = self.reader();
         let greyscale = self.convert_to_greyscale(&image);
         let ascii_art = self.convert_to_ascii(greyscale);
-        self.save_image(ascii_art, &self.options.output_path)
+        self.save_image(ascii_art, &self.options.output_path);
     }
 
     // Function to generate animation frames
@@ -217,7 +217,7 @@ impl <'a>ASCIIImage<'a> {
 
             // Save each frame
             let frame_path = format!("output_frame_{:03}.png", frame_num);
-            self.save_image(ascii_art, &frame_path)?;
+            self.save_image(ascii_art, &frame_path);
 
             // Optional sleep to visualize movement in real-time
             sleep(Duration::from_millis(50));
@@ -291,7 +291,7 @@ impl ASCII for ASCIIImage<'_> {
         ascii_art
     }
 
-    fn save_image(&self, ascii_art: Vec<Vec<ColoredChar>>, output_path: &str) -> Result<(), image::ImageError> {
+    fn save_image(&self, ascii_art: Vec<Vec<ColoredChar>>, output_path: &str) {
         let scale = PxScale::from(12.0);
         let line_height = scale.y.ceil() as u32;
         let num_lines = ascii_art.len();
@@ -335,8 +335,7 @@ impl ASCII for ASCIIImage<'_> {
             }
         }
 
-        img.save(output_path)?;
-        Ok(())
+        img.save(output_path);
     }
 }
 
