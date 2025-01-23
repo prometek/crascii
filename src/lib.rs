@@ -78,7 +78,7 @@ impl <'a>ASCIIImage<'a> {
         let g = pixel[1];
         let b = pixel[2];
         // Apply the sRGB color space conversion formula: https://en.wikipedia.org/wiki/Grayscale
-        ((0.2126 * r as f32 + 0.7152 * g as f32 + 0.0722 * b as f32) / 3.0) as u8
+        ((0.2126 * r as f32 + 0.7152 * g as f32 + 0.0722 * b as f32)) as u8
     }
 
     pub fn save_greyscale(&mut self, output_path: &str) -> Result<(), image::ImageError> {
