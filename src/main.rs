@@ -33,6 +33,10 @@ struct Args {
     /// Print the output image to the console
     #[arg(short, long, help = "Flag to print the ASCII image directly to the console")]
     print: bool,
+
+    /// Font size
+    #[arg(short, long, help = "Font size for the ASCII output")]
+    font_size: Option<f32>,
 }
 
 
@@ -60,6 +64,7 @@ fn main() -> Result<(), image::ImageError> {
         print: args.print,
         charsets: Cow::Owned(args.charsets),
         output_path: Cow::Owned(args.output_path),
+        font_size: args.font_size,
     });
     ascii_image.convert();
     

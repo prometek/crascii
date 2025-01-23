@@ -59,6 +59,7 @@ pub struct Options<'a> {
     pub print: bool,
     pub charsets: Cow<'a, str>,
     pub output_path: Cow<'a, str>,
+    pub font_size: Option<f32>,
 }
 
 impl <'a>ASCIIImage<'a> {
@@ -299,7 +300,7 @@ impl ASCII for ASCIIImage<'_> {
     }
 
     fn save_image(&self, ascii_art: Vec<Vec<ColoredChar>>, output_path: &str) {
-        let scale = PxScale::from(12.0);
+        let scale = PxScale::from(self.options.font_size.unwrap_or(12.0));
         let line_height = scale.y.ceil() as u32;
         let num_lines = ascii_art.len();
 
