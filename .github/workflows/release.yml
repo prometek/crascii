@@ -42,6 +42,11 @@ jobs:
 
   build-macos:
     runs-on: macos-latest
+    strategy:
+      matrix:
+        target:
+          - x86_64-apple-darwin
+          - arm64-apple-darwin
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -51,8 +56,14 @@ jobs:
         with:
           toolchain: stable
 
+      - name: Install Dependencies for arm64 (if needed)
+        if: matrix.target == 'arm64-apple-darwin'
+        run: |
+          # Add any arm64-specific dependencies here
+          # For example, installing Homebrew packages for arm64
+          brew update
+
       - name: Build
         run: |
-          rustup target add x86_64-apple-darwin
-          cargo build --release --target x86_64-apple-darwin
-
+          rustup target add ${{ matrix.target }}
+          cargo build --release --target ${{ matrix.target }} 
