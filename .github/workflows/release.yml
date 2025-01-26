@@ -40,6 +40,20 @@ jobs:
           rustup target add ${{ matrix.target }}
           cargo build --release --target ${{ matrix.target }}
 
+      - name: Archive Linux Build Artifacts
+        if: success()
+        run: |
+          mkdir -p artifacts/linux
+          cp target/x86_64-unknown-linux-gnu/release/your_binary_name artifacts/linux/
+          cp target/aarch64-unknown-linux-gnu/release/your_binary_name artifacts/linux/
+          tar -czf build-linux.tar.gz -C artifacts linux
+
+      - name: Upload Linux Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-linux
+          path: build-linux.tar.gz
+
   build-macos:
     runs-on: macos-latest
     strategy:
@@ -67,6 +81,36 @@ jobs:
         run: |
           rustup target add ${{ matrix.target }}
           cargo build --release --target ${{ matrix.target }}
+
+      - name: Archive macOS Build Artifacts
+        if: success()
+        run: |
+          mkdir -p artifacts/macos
+          cp target/x86_64-apple-darwin/release/your_binary_name artifacts/macos/
+          cp target/aarch64-apple-darwin/release/your_binary_name artifacts/macos/
+          tar -czf build-macos.tar.gz -C artifacts macos
+
+      - name: Upload macOS Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-macos
+          path: build-macos.tar.gz
+
+
+    test:
+      runs-on: ubuntu-latest
+      needs: [build-linux, build-macos]
+      steps:
+        - name: Checkout code
+          uses: actions/checkout@v3
+
+        - name: Install Rust
+          uses: actions-rs/toolchain@v1
+          with:
+            toolchain: stable
+
+        - name: Run Tests
+          run: cargo test --release
 
   publish:
     needs: [build-linux, build-macos]
@@ -102,13 +146,13 @@ jobs:
       - name: Download Linux Artifacts
         uses: actions/download-artifact@v3
         with:
-          name: build-linux-*
+          name: build-linux
           path: ./binaries/linux
 
       - name: Download macOS Artifacts
         uses: actions/download-artifact@v3
         with:
-          name: build-macos-*
+          name: build-macos
           path: ./binaries/macos
 
       - name: Create GitHub Release
