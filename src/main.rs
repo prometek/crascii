@@ -28,7 +28,7 @@ struct Args {
 
     /// Output file
     #[arg(short, long, help = "Path to save the ASCII output")]
-    output_path: String,
+    output_path: Option<String>,
 
     /// Print the output image to the console
     #[arg(short, long, help = "Flag to print the ASCII image directly to the console")]
@@ -47,26 +47,57 @@ fn parse_args() -> Result<Args, String> {
         return Err("Image path cannot be empty".to_string());
     }
 
-    if args.output_path.is_empty() {
-        return Err("Output path cannot be empty".to_string());
+    if args.output_path.is_none() && !args.print {
+        return Err("At least one of the following flags must be set: --output-path or --print".to_string());
     }
 
     Ok(args)
 }
 
 fn main() -> Result<(), image::ImageError> {
-    let args =  parse_args().expect("Failed to parse arguments");
+    match parse_args() {
+        Ok(args) => {
+            let mut ascii_image = ASCIIImage::new(args.image, Options {
+                columns: args.columns,
+                lines: args.lines,
+                color: args.color,
+                print: args.print,
+                charsets: Cow::Owned(args.charsets),
+                output_path: Cow::Owned(args.output_path.unwrap_or("".to_string())),
+                font_size: args.font_size,
+            });
+            ascii_image.convert();
+        },
+        Err(err) => {
+            eprintln!("Error: {}", err);
+            std::process::exit(1);
+        }
+    }
 
-    let mut ascii_image = ASCIIImage::new(args.image, Options {
-        columns: args.columns,
-        lines: args.lines,
-        color: args.color,
-        print: args.print,
-        charsets: Cow::Owned(args.charsets),
-        output_path: Cow::Owned(args.output_path),
-        font_size: args.font_size,
-    });
-    ascii_image.convert();
-    
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::Args;
+    use clap::Parser;
+
+    #[test]
+    fn test_parse_args() {
+        let args = vec![
+            "your_tool_name",
+            "--image", "input.png",
+            "--output-path", "output.txt",
+            "--color",
+            "--columns", "80",
+            "--lines", "40",
+        ];
+        let args = Args::parse_from(args);
+        assert_eq!(args.image, "input.png");
+        assert_eq!(args.output_path, Some("output.txt".to_string()));
+        assert!(args.color);
+        assert_eq!(args.columns, Some(80));
+        assert_eq!(args.lines, Some(40));
+    }
+}
+

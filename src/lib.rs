@@ -159,7 +159,9 @@ impl <'a>ASCIIImage<'a> {
         let image = self.reader();
         let greyscale = self.convert_to_greyscale(&image);
         let ascii_art = self.convert_to_ascii(greyscale);
-        self.save_image(ascii_art, &self.options.output_path);
+        if self.options.output_path != "" {
+            self.save_image(ascii_art, &self.options.output_path);
+        }
     }
 
     // Function to generate animation frames
@@ -261,7 +263,6 @@ impl ASCII for ASCIIImage<'_> {
                 greyscale_image.put_pixel(x, y, image::Luma([greyscale]));
             }
         }
-        //greyscale_image.save("greyscale.png");
         greyscale_image
     }
 
