@@ -9,8 +9,23 @@ permissions:
   contents: write
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Run Tests
+        run: cargo test --release
+
   build-linux:
     runs-on: ubuntu-latest
+    needs: test
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -67,6 +82,7 @@ jobs:
 
   build-macos:
     runs-on: macos-latest
+    needs: test
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -115,21 +131,6 @@ jobs:
 
       - name: Clean Up macOS Artifacts
         run: rm -rf artifacts build-macos.tar.gz
-
-  test:
-    runs-on: ubuntu-latest
-    needs: [build-linux, build-macos]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-
-      - name: Run Tests
-        run: cargo test --release
 
   release:
     permissions:
