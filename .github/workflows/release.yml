@@ -5,8 +5,6 @@ on:
     tags:
       - 'v*'  # Triggers the workflow on tags starting with 'v'
 
-permissions:
-  contents: write
 
 jobs:
   build-linux:
@@ -157,8 +155,7 @@ jobs:
           tag_name: ${{ github.ref_name }}
           release_name: Release ${{ github.ref_name }}
           body: |
-            ## Changes in this release
-            - Describe the changes, features, and fixes here.
+            Initial release of crascii
           draft: false
           prerelease: false
 
