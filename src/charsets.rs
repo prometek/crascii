@@ -26,14 +26,32 @@ pub const SLIGHT: &[&str] = &[
     "\\", "\\\\", "/", "Y", "L", "p", "d", "a", "*", "W", "8", "%", "@", "$",
 ];
 
-pub fn from_str(s: &str) -> Option<&[&str]> {
+pub fn from_str(s: &str, charsets: &mut Vec<&str>) {
     match s {
-        "block" => Some(BLOCK),
-        "chinese" => Some(CHINESE),
-        "default" => Some(DEFAULT),
-        "emoji" => Some(EMOJI),
-        "russian" => Some(RUSSIAN),
-        "slight" => Some(SLIGHT),
-        _ => Some(DEFAULT),
+        "block" => {
+            charsets.extend_from_slice(BLOCK);
+        },
+        "chinese" => {
+            charsets.extend_from_slice(CHINESE);
+        },
+        "default" => {
+            charsets.extend_from_slice(DEFAULT);
+        },
+        "emoji" => {
+            charsets.extend_from_slice(EMOJI);
+        },
+        "russian" => {
+            charsets.extend_from_slice(RUSSIAN);
+        },
+        "slight" => {
+            charsets.extend_from_slice(SLIGHT);
+        },
+                _ => {
+            // Create a vector of &str slices from the individual characters of the input string
+            for ch in s.chars() {
+                let leaked = Box::leak(ch.to_string().into_boxed_str());
+                charsets.push(&*leaked);
+            }
+        }
     }
 }

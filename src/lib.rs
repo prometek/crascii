@@ -137,7 +137,7 @@ impl <'a>ASCIIImage<'a> {
 
 
     fn get_char_aspect_ratio(&self, ch: char) -> (f32, f32, f32) {
-        let scale = PxScale::from(12.0);
+        let scale = PxScale::from(self.options.font_size.unwrap_or(12.0));
         
         let font_data = include_bytes!("fonts/Anonymous Pro.ttf");
         let font = FontRef::try_from_slice(font_data).expect("Failed to load font");
@@ -267,14 +267,15 @@ impl ASCII for ASCIIImage<'_> {
 
 
     fn convert_to_ascii(&self, image: GrayImage) -> Vec<Vec<ColoredChar>> {
-        let chars = charsets::from_str(&self.options.charsets).unwrap();
+        let mut charsets: Vec<&str> = Vec::new();
+        let _chars = charsets::from_str(&self.options.charsets, &mut charsets);
         let mut ascii_art = Vec::new();
 
         for y in 0..image.height() {
             let mut line = Vec::new();
             for x in 0..image.width() {
                 let pixel = self.pixels.get_pixel(x, y);
-                let ch = self.find_char(chars, pixel.grey).chars().next().unwrap();
+                let ch = self.find_char(&charsets, pixel.grey).chars().next().unwrap();
                 let color = Rgba([pixel.r, pixel.g, pixel.b, pixel.a]);
 
                 line.push(ColoredChar { ch, color });
