@@ -44,8 +44,8 @@ jobs:
         if: success()
         run: |
           mkdir -p artifacts/linux
-          cp target/x86_64-unknown-linux-gnu/release/your_binary_name artifacts/linux/
-          cp target/aarch64-unknown-linux-gnu/release/your_binary_name artifacts/linux/
+          cp target/x86_64-unknown-linux-gnu/release/crascii artifacts/linux/
+          cp target/aarch64-unknown-linux-gnu/release/crascii artifacts/linux/
           tar -czf build-linux.tar.gz -C artifacts linux
 
       - name: Upload Linux Artifact
@@ -86,8 +86,8 @@ jobs:
         if: success()
         run: |
           mkdir -p artifacts/macos
-          cp target/x86_64-apple-darwin/release/your_binary_name artifacts/macos/
-          cp target/aarch64-apple-darwin/release/your_binary_name artifacts/macos/
+          cp target/x86_64-apple-darwin/release/crascii artifacts/macos/
+          cp target/aarch64-apple-darwin/release/crascii artifacts/macos/
           tar -czf build-macos.tar.gz -C artifacts macos
 
       - name: Upload macOS Artifact
