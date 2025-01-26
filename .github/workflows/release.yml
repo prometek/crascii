@@ -46,7 +46,7 @@ jobs:
       matrix:
         target:
           - x86_64-apple-darwin
-          - arm64-apple-darwin
+          - arm64e-apple-darwin
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
