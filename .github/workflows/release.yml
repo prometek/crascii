@@ -5,6 +5,8 @@ on:
     tags:
       - 'v*'  # Triggers the workflow on tags starting with 'v'
 
+permissions:
+  contents: write
 
 jobs:
   build-linux:
