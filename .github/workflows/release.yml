@@ -1,18 +1,13 @@
-name: Build and Release
+name: Build, Test, and Release
 
 on:
   push:
     tags:
-      - 'v*'
+      - 'v*'  # Triggers the workflow on tags starting with 'v'
 
 jobs:
   build-linux:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        target:
-          - x86_64-unknown-linux-gnu
-          - aarch64-unknown-linux-gnu
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -25,33 +20,38 @@ jobs:
       - name: Install cross
         run: sudo apt-get install -y gcc-aarch64-linux-gnu libc6-dev-arm64-cross
 
+      - name: Add Linux Targets
+        run: |
+          rustup target add x86_64-unknown-linux-gnu
+          rustup target add aarch64-unknown-linux-gnu
+
       - name: Configure Cargo for aarch64
-        if: matrix.target == 'aarch64-unknown-linux-gnu'
         run: |
           mkdir -p .cargo
           echo '[target.aarch64-unknown-linux-gnu]' >> .cargo/config.toml
           echo 'linker = "aarch64-linux-gnu-gcc"' >> .cargo/config.toml
 
-      - name: Build
-        env:
-          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+      - name: Build for x86_64
         run: |
-          rustup target add ${{ matrix.target }}
-          cargo build --release --target ${{ matrix.target }}
-    
+          cargo build --release --target x86_64-unknown-linux-gnu
 
-      - name: List Build Directory
+      - name: Build for aarch64
         run: |
-          echo "Listing contents of target/${{ matrix.target }}/release/"
-          ls -la target/${{ matrix.target }}/release/
+          cargo build --release --target aarch64-unknown-linux-gnu
 
       - name: Archive Linux Build Artifacts
-        if: success()
         run: |
           mkdir -p artifacts/linux
-          cp target/x86_64-unknown-linux-gnu/release/crascii artifacts/linux/
-          cp target/aarch64-unknown-linux-gnu/release/crascii artifacts/linux/
+          cp target/x86_64-unknown-linux-gnu/release/crascii artifacts/linux/crascii-linux-x86_64
+          cp target/aarch64-unknown-linux-gnu/release/crascii artifacts/linux/crascii-linux-aarch64
           tar -czf build-linux.tar.gz -C artifacts linux
+
+      - name: Validate Linux Build Artifact
+        run: |
+          if [ ! -f build-linux.tar.gz ]; then
+            echo "Linux build artifact not found!"
+            exit 1
+          fi
 
       - name: Upload Linux Artifact
         uses: actions/upload-artifact@v3
@@ -59,13 +59,11 @@ jobs:
           name: build-linux
           path: build-linux.tar.gz
 
+      - name: Clean Up Linux Artifacts
+        run: rm -rf artifacts build-linux.tar.gz
+
   build-macos:
     runs-on: macos-latest
-    strategy:
-      matrix:
-        target:
-          - x86_64-apple-darwin
-          - aarch64-apple-darwin
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -75,25 +73,36 @@ jobs:
         with:
           toolchain: stable
 
-      - name: Install Dependencies for arm64 (if needed)
-        if: matrix.target == 'arm64-apple-darwin'
+      - name: Add macOS Targets
         run: |
-          # Add any arm64-specific dependencies here
-          # For example, installing Homebrew packages for arm64
+          rustup target add x86_64-apple-darwin
+          rustup target add aarch64-apple-darwin
+
+      - name: Install Dependencies for aarch64 (if needed)
+        run: |
           brew update
 
-      - name: Build
+      - name: Build for x86_64
         run: |
-          rustup target add ${{ matrix.target }}
-          cargo build --release --target ${{ matrix.target }}
+          cargo build --release --target x86_64-apple-darwin
+
+      - name: Build for aarch64
+        run: |
+          cargo build --release --target aarch64-apple-darwin
 
       - name: Archive macOS Build Artifacts
-        if: success()
         run: |
           mkdir -p artifacts/macos
-          cp target/x86_64-apple-darwin/release/crascii artifacts/macos/
-          cp target/aarch64-apple-darwin/release/crascii artifacts/macos/
+          cp target/x86_64-apple-darwin/release/crascii artifacts/macos/crascii-macos-x86_64
+          cp target/aarch64-apple-darwin/release/crascii artifacts/macos/crascii-macos-aarch64
           tar -czf build-macos.tar.gz -C artifacts macos
+
+      - name: Validate macOS Build Artifact
+        run: |
+          if [ ! -f build-macos.tar.gz ]; then
+            echo "macOS build artifact not found!"
+            exit 1
+          fi
 
       - name: Upload macOS Artifact
         uses: actions/upload-artifact@v3
@@ -101,6 +110,8 @@ jobs:
           name: build-macos
           path: build-macos.tar.gz
 
+      - name: Clean Up macOS Artifacts
+        run: rm -rf artifacts build-macos.tar.gz
 
   test:
     runs-on: ubuntu-latest
@@ -117,44 +128,18 @@ jobs:
       - name: Run Tests
         run: cargo test --release
 
-  publish:
-    needs: [build-linux, build-macos]
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          profile: minimal
-          override: true
-
-      - name: Set up Cargo with API Token
-        env:
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_TOKEN }}
-        run: |
-          mkdir -p ~/.cargo
-          echo "[registry]" >> ~/.cargo/credentials
-          echo "token = \"${CARGO_REGISTRY_TOKEN}\"" >> ~/.cargo/credentials
-
-      - name: Publish to crates.io
-        run: cargo publish 
-
   release:
-    needs: [build-linux, build-macos]
+    needs: [build-linux, build-macos, test]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
-      - name: Download Linux Artifacts
+      - name: Download Linux Artifact
         uses: actions/download-artifact@v3
         with:
           name: build-linux
           path: ./binaries/linux
 
-      - name: Download macOS Artifacts
+      - name: Download macOS Artifact
         uses: actions/download-artifact@v3
         with:
           name: build-macos
@@ -168,25 +153,29 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           release_name: Release ${{ github.ref_name }}
+          body: |
+            ## Changes in this release
+            - Describe the changes, features, and fixes here.
           draft: false
           prerelease: false
 
-      - name: Upload Linux Binaries
+      - name: Upload Linux Binaries to Release
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./binaries/linux/crascii
-          asset_name: crascii-linux
-          asset_content_type: application/octet-stream
+          asset_path: ./binaries/linux/build-linux.tar.gz
+          asset_name: crascii-linux.tar.gz
+          asset_content_type: application/gzip
 
-      - name: Upload macOS Binaries
+      - name: Upload macOS Binaries to Release
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./binaries/macos/crascii
-          asset_name: crascii-macos
-          asset_content_type: application/octet-stream 
+          asset_path: ./binaries/macos/build-macos.tar.gz
+          asset_name: crascii-macos.tar.gz
+          asset_content_type: application/gzip
+        asset_content_type: application/octet-stream 
